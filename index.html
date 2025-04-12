@@ -148,6 +148,8 @@
       padding: 2.5rem;
       margin: -3rem auto 3rem;
       position: relative;
+      position: relative;
+  z-index: 0; /* Add this line */
     }
     
     /* Sections */
@@ -288,7 +290,9 @@
       color: var(--white);
       box-shadow: 0 4px 12px rgba(0, 65, 101, 0.2);
     }
-    
+    .button {
+  display: none !important; /* Hide buttons in PDF */
+}
     /* Tables */
     table {
       width: 100%;
@@ -369,39 +373,56 @@
     }
     
     /* Print Styles */
-    @media print {
-      body {
-        background: white;
-        font-size: 12pt;
-      }
-      
-      .container {
-        max-width: 100%;
-        padding: 0;
-      }
-      
-      .content {
-        box-shadow: none;
-        padding: 1rem;
-        margin: 0;
-      }
-      
-      .cta-box, .note, footer {
-        break-inside: avoid;
-      }
-      
-      a {
-        text-decoration: none;
-        color: var(--primary);
-      }
-      
-      .button {
-        border: 1px solid #ccc;
-        box-shadow: none;
-        color: black;
-        background: white;
-      }
-    }
+    /* Print Styles - UPDATE THIS EXISTING BLOCK */
+@media print {
+  body {
+    background: white;
+    font-size: 12pt;
+  }
+  
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  .content {
+    box-shadow: none;
+    padding: 1rem;
+    margin: 0;
+    /* Add these new lines */
+    padding: 20px !important;
+    margin: 0 !important;
+  }
+  
+  .cta-box, .note, footer {
+    break-inside: avoid;
+  }
+  
+  a {
+    text-decoration: none;
+    color: var(--primary);
+  }
+  
+  .button {
+    border: 1px solid #ccc;
+    box-shadow: none;
+    color: black;
+    background: white;
+  }
+
+  /* ADD THESE NEW PRINT RULES */
+  .section {
+    page-break-inside: avoid;
+  }
+
+  h2 {
+    page-break-after: avoid;
+  }
+
+  .note, .cta-box, table {
+    page-break-inside: avoid;
+  }
+}
     
     /* Responsive */
     @media (max-width: 768px) {
@@ -703,20 +724,42 @@
   </footer>
   
   <!-- Scripts for PDF generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
-    document.getElementById('download-pdf').addEventListener('click', function() {
-      html2canvas(document.body).then(function(canvas) {
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'pt', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save('2025_Pest_Defense_Guide.pdf');
-      });
-    });
-  </script>
+ <script>
+document.getElementById('download-pdf').addEventListener('click', function() {
+  // Target the main content area instead of entire body
+  const element = document.querySelector('.content');
+  const options = {
+    logging: true,
+    scale: 2  // Increase resolution
+  };
+
+  html2canvas(element, options).then(canvas => {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+    let position = 0;
+    let remainingHeight = imgHeight;
+
+    // Add first page
+    pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
+    remainingHeight -= pageHeight;
+
+    // Add subsequent pages if needed
+    while (remainingHeight > 0) {
+      position -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(canvas, 'PNG', 0, position, imgWidth, imgHeight);
+      remainingHeight -= pageHeight;
+    }
+
+    pdf.save('2025_Pest_Defense_Guide.pdf');
+  });
+});
+</script>
 </body>
 </html>
